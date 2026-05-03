@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PawGallery — Dog Breed Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #24242f;
+      --border: #2e2e3d;
+      --accent: #7c6af7;
+      --accent-light: #a093ff;
+      --accent-glow: rgba(124, 106, 247, 0.25);
+      --text: #f0f0f8;
+      --text-muted: #8888a8;
+      --radius: 16px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1a24 0%, #0f0f13 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 24px 32px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+    }
+
+    .logo h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-light), #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+    }
+
+    /* ── Select ── */
+    .select-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .select-wrapper::after {
+      content: '▾';
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent-light);
+      pointer-events: none;
+      font-size: 1rem;
+    }
+
+    select {
+      width: 100%;
+      padding: 14px 44px 14px 18px;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    select option {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    /* ── Main content ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── Breed title ── */
+    .breed-title {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .breed-title.visible { display: flex; }
+
+    .breed-title h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-transform: capitalize;
+      letter-spacing: -0.3px;
+    }
+
+    .breed-badge {
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent-light);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    /* ── Grid ── */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px var(--accent);
+      border-color: var(--accent);
+    }
+
+    .card img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.3s;
+    }
+
+    .card img.loading-img { opacity: 0; }
+    .card img.loaded { opacity: 1; }
+
+    .card-footer {
+      padding: 10px 14px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-footer span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Skeleton ── */
+    .skeleton {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .skeleton-img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    .skeleton-footer {
+      height: 38px;
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-top: 1px solid var(--border);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Spinner ── */
+    .spinner-wrap {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 32px 0;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .spinner-wrap.visible { display: flex; }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty / Error states ── */
+    .state-msg {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--text-muted);
+    }
+
+    .state-msg .icon { font-size: 3rem; margin-bottom: 12px; }
+    .state-msg h3 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .state-msg p  { font-size: 0.875rem; }
+
+    /* ── Sentinel ── */
+    #sentinel { height: 1px; }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      cursor: zoom-out;
+    }
+
+    .lightbox.open { display: flex; }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: var(--radius);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+      object-fit: contain;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .lightbox-close:hover { background: var(--border); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .logo h1 { font-size: 1.4rem; }
+      .gallery  { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+      .breed-title h2 { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🐾</span>
+      <h1>PawGallery</h1>
+    </div>
+    <p>Explore beautiful dog breeds from around the world</p>
+    <div class="select-wrapper">
+      <select id="breedSelect">
+        <option value="" disabled selected>Select a breed…</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <div id="breedTitle" class="breed-title">
+      <h2 id="breedName"></h2>
+      <span id="breedCount" class="breed-badge"></span>
+    </div>
+
+    <div id="gallery" class="gallery" role="list" aria-label="Dog breed images"></div>
+
+    <div id="spinnerWrap" class="spinner-wrap" aria-live="polite">
+      <div class="spinner"></div>
+      <span>Loading more photos…</span>
+    </div>
+
+    <div id="sentinel"></div>
+  </main>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close">✕</button>
+    <img id="lightboxImg" src="" alt="Full size dog photo" />
+  </div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  const PAGE_SIZE = 20;
+
+  let allImages   = [];
+  let loadedCount = 0;
+  let isLoading   = false;
+  let observer    = null;
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  const breedSelect  = document.getElementById('breedSelect');
+  const gallery      = document.getElementById('gallery');
+  const spinnerWrap  = document.getElementById('spinnerWrap');
+  const breedTitle   = document.getElementById('breedTitle');
+  const breedName    = document.getElementById('breedName');
+  const breedCount   = document.getElementById('breedCount');
+  const sentinel     = document.getElementById('sentinel');
+  const lightbox     = document.getElementById('lightbox');
+  const lightboxImg  = document.getElementById('lightboxImg');
+  const lightboxClose = document.getElementById('lightboxClose');
+
+  // ── API ────────────────────────────────────────────────────────────────────
+  async function fetchBreeds() {
+    const res  = await fetch('https://dog.ceo/api/breeds/list/all');
+    const data = await res.json();
+    return data.message;
+  }
+
+  async function fetchImages(breed) {
+    const res  = await fetch(`https://dog.ceo/api/breed/${breed}/images`);
+    const data = await res.json();
+    return data.message;
+  }
+
+  // ── Populate dropdown ──────────────────────────────────────────────────────
+  async function populateBreeds() {
+    try {
+      const breeds = await fetchBreeds();
+
+      for (const [breed, subBreeds] of Object.entries(breeds)) {
+        if (subBreeds.length === 0) {
+          appendOption(breedSelect, breed, capitalize(breed));
+        } else {
+          const group = document.createElement('optgroup');
+          group.label = capitalize(breed);
+          appendOption(group, breed, `All ${capitalize(breed)}`);
+          for (const sub of subBreeds) {
+            appendOption(group, `${breed}/${sub}`, `↳ ${capitalize(sub)}`);
+          }
+          breedSelect.appendChild(group);
+        }
+      }
+    } catch {
+      showError('Could not load breeds. Check your connection and reload.');
+    }
+  }
+
+  function appendOption(parent, value, text) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = text;
+    parent.appendChild(opt);
+  }
+
+  // ── Breed selection ────────────────────────────────────────────────────────
+  breedSelect.addEventListener('change', async () => {
+    const breed = breedSelect.value;
+    if (!breed) return;
+
+    resetGallery();
+    showSkeletons(PAGE_SIZE);
+
+    try {
+      allImages   = shuffle(await fetchImages(breed));
+      loadedCount = 0;
+
+      clearGallery();
+      updateBreedTitle(breed, allImages.length);
+      loadNextPage();
+      attachScrollObserver();
+    } catch {
+      clearGallery();
+      showError('Failed to load images. Please try another breed.');
+    }
+  });
+
+  // ── Rendering ──────────────────────────────────────────────────────────────
+  function loadNextPage() {
+    if (isLoading || loadedCount >= allImages.length) return;
+
+    isLoading = true;
+    setSpinner(true);
+
+    const batch = allImages.slice(loadedCount, loadedCount + PAGE_SIZE);
+    batch.forEach((url, i) => renderCard(url, loadedCount + i + 1));
+    loadedCount += batch.length;
+
+    isLoading = false;
+    setSpinner(false);
+
+    if (loadedCount >= allImages.length) disconnectObserver();
+  }
+
+  function renderCard(url, index) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.setAttribute('role', 'listitem');
+
+    const img = document.createElement('img');
+    img.src     = url;
+    img.alt     = `Dog photo #${index}`;
+    img.loading = 'lazy';
+    img.className = 'loading-img';
+    img.addEventListener('load',  () => img.classList.replace('loading-img', 'loaded'));
+    img.addEventListener('error', () => { img.src = 'https://placehold.co/400x400/1a1a24/8888a8?text=No+image'; });
+
+    const footer = document.createElement('div');
+    footer.className = 'card-footer';
+    footer.innerHTML = `<span class="dot"></span>Photo #${index}`;
+
+    card.appendChild(img);
+    card.appendChild(footer);
+    card.addEventListener('click', () => openLightbox(url));
+
+    gallery.appendChild(card);
+  }
+
+  // ── Skeletons ──────────────────────────────────────────────────────────────
+  function showSkeletons(count) {
+    for (let i = 0; i < count; i++) {
+      const sk = document.createElement('div');
+      sk.className = 'skeleton';
+      sk.innerHTML = '<div class="skeleton-img"></div><div class="skeleton-footer"></div>';
+      gallery.appendChild(sk);
+    }
+  }
+
+  // ── Infinite scroll observer ───────────────────────────────────────────────
+  function attachScrollObserver() {
+    disconnectObserver();
+    observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) loadNextPage();
+    }, { rootMargin: '300px' });
+    observer.observe(sentinel);
+  }
+
+  function disconnectObserver() {
+    if (observer) { observer.disconnect(); observer = null; }
+  }
+
+  // ── Lightbox ───────────────────────────────────────────────────────────────
+  function openLightbox(url) {
+    lightboxImg.src = url;
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    lightboxImg.src = '';
+    document.body.style.overflow = '';
+  }
+
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function resetGallery() {
+    disconnectObserver();
+    allImages   = [];
+    loadedCount = 0;
+    isLoading   = false;
+    clearGallery();
+    breedTitle.classList.remove('visible');
+  }
+
+  function clearGallery() {
+    gallery.innerHTML = '';
+  }
+
+  function setSpinner(show) {
+    spinnerWrap.classList.toggle('visible', show);
+  }
+
+  function updateBreedTitle(breed, total) {
+    const parts = breed.split('/');
+    const label = parts.length > 1
+      ? `${capitalize(parts[0])} — ${capitalize(parts[1])}`
+      : capitalize(parts[0]);
+    breedName.textContent = label;
+    breedCount.textContent = `${total} photo${total !== 1 ? 's' : ''}`;
+    breedTitle.classList.add('visible');
+  }
+
+  function showError(msg) {
+    gallery.innerHTML = `
+      <div class="state-msg" style="grid-column:1/-1">
+        <div class="icon">⚠️</div>
+        <h3>Something went wrong</h3>
+        <p>${msg}</p>
+      </div>`;
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  populateBreeds();
+</script>
+</body>
+</html>
